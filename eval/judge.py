@@ -32,6 +32,11 @@ def read_jsonl(path):
 
 def read_labels(path="labels.csv"):
     """labels.csv: scenario_id,label,note — chỉ lấy dòng có label."""
+    if not os.path.exists(path) or os.path.getsize(path) < 30:
+        for candidate in ["labels-phuong.csv"] + [str(p) for p in Path(".").glob("labels-*.csv")]:
+            if os.path.exists(candidate) and os.path.getsize(candidate) >= 30:
+                path = candidate
+                break
     if not os.path.exists(path):
         return {}
     with open(path, encoding="utf-8") as f:
