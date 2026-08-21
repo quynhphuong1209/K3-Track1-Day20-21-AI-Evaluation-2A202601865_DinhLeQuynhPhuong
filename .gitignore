@@ -3,10 +3,3 @@
 venv/
 __pycache__/
 *.pyc
-# artifacts chạy sinh ra — sinh viên tự tạo khi chạy (ở root repo)
-dataset.jsonl
-results.jsonl
-verdicts.jsonl
-labels.csv
-labels-*.csv
-report.html
