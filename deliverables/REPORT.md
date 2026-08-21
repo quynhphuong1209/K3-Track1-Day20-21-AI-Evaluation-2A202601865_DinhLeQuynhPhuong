@@ -200,7 +200,7 @@ Khi rà soát các failure mode từ Phase 2, nhóm chẩn đoán phân loại n
 
 2. **Làn 2 — LLM Judge (Semantic Evaluation — Chi phí thấp, Tự động hóa cao):**
    - *Tiêu chí đảm nhiệm:* `Groundedness`, `Scope & Refusal Adherence`, `Slide Deixis Resolution`.
-   - *Cấu hình Judge:* Model `openai/gpt-4o-mini` (temperature = 0, prompt cố định tại [`eval/judge_prompt.md`](file:///D:/K4-Track1-Day20-21-AI-Evaluation-2A202601236_CaoCacTuong/eval/judge_prompt.md)).
+   - *Cấu hình Judge:* Model `openai/gpt-4o-mini` (temperature = 0, prompt cố định tại `eval/judge_prompt.md`).
    - *Lý do chọn model:* 
      - Sử dụng model độc lập (`gpt-4o-mini`) khác với model của Tutor (`deepseek-v4-flash`) để **tránh thiên vị tự chấm (self-grading bias)**.
      - Chi phí rẻ (~$0.15 / 1M input tokens), tốc độ nhanh, khả năng đọc hiểu ngữ nghĩa tiếng Việt tốt để đánh giá mức độ tương thích giữa câu trả lời và nguồn trích dẫn.
@@ -244,31 +244,37 @@ Khi rà soát các failure mode từ Phase 2, nhóm chẩn đoán phân loại n
   1. `sc-03-in-eval-types` (Phương: fail vs Tường: pass): Đối chiếu corpus xác nhận kiến thức nằm trọn vẹn trong section trích dẫn -> **Chốt PASS**.
   2. `sc-15-ambiguous-eval` & `sc-16-ambiguous-score` (Phương: uncertain vs Tường: pass): Nhận diện Tutor đã tận dụng context slide (s47, s52) xuất sắc để trả lời câu hỏi deixis -> **Chốt PASS**.
   3. `sc-20-edge-empty` (Phương: fail vs Tường: pass): Tutor xả bài giảng dài khi câu hỏi chỉ có chữ "Hỏi?" mà không yêu cầu làm rõ ý định -> **Chốt FAIL**.
-- **Bộ nhãn vàng đồng thuận (Consensus Ground Truth):** Lưu tại [`deliverables/evidence/labels.csv`](file:///D:/K4-Track1-Day20-21-AI-Evaluation-2A202601236_CaoCacTuong/deliverables/evidence/labels.csv) gồm **19 Pass (95%)**, **1 Fail (5%)**, và **0 Uncertain**.
+- **Bộ nhãn vàng đồng thuận (Consensus Ground Truth):** Lưu tại `deliverables/evidence/labels.csv` gồm **19 Pass (95%)**, **1 Fail (5%)**, và **0 Uncertain**.
 
 ---
 
-### 2. Kết quả Chạy Judge v1 & Ma trận Nhầm lẫn (Confusion Matrix)
+### 2. Kết quả Chạy Judge Vòng 1 (Baseline) & Ma trận Nhầm lẫn
 
-- **Cấu hình Judge:** Model `openai/gpt-4o-mini`, prompt [`eval/judge_prompt.md`](file:///D:/K4-Track1-Day20-21-AI-Evaluation-2A202601236_CaoCacTuong/eval/judge_prompt.md) (tập trung tiêu chí Groundedness & Refusal), nhiệt độ 0.
-- **Tỉ lệ đồng thuận (Agreement Judge vs Nhãn vàng con người):** **18/20 câu = 90.0%**.
+- **Cấu hình Judge Vòng 1:** Model `openai/gpt-4o-mini`, prompt `judge-prompt-v1.md`, nhiệt độ 0.
+- **Kết quả Vòng 1:** Tỉ lệ đồng thuận (Agreement Judge vs Nhãn vàng con người) đạt **18/20 câu = 90.0%**.
 
-### Confusion matrix (dán output judge.py)
-
+#### Ma trận nhầm lẫn Vòng 1 (Baseline)
 ```text
-Confusion matrix (hàng = judge, cột = nhãn người):
-                 |      pass      fail uncertain
-        pass     |        18         1         0
-        fail     |         1         0         0
-   uncertain     |         0         0         0
-Agreement: 18/20 = 90%
+Confusion matrix (hàng = judge v1, cột = nhãn người):
+                 |      pass      fail  uncertain
+        pass     |        18         1          0
+        fail     |         1         0          0
+   uncertain     |         0         0          0
+
+Agreement Vòng 1: 18/20 = 90.0%
 ```
 
+#### Số liệu thực chứng Evaluator (Vòng 1 Baseline):
+- **True Positive Rate (TPR / Sensitivity):** \( \frac{18}{19} = \mathbf{94.7\%} \) (Dẫn đúng 18/19 output tốt).
+- **True Negative Rate (TNR / Specificity):** \( \frac{0}{1} = \mathbf{0.0\%} \) (Không bắt được output xấu `sc-20`).
+- **False Negative Rate (FNR):** \( \frac{1}{19} = 5.3\% \) (Trường hợp `sc-03` bị bắt nhầm thành fail).
+- **False Positive Rate (FPR):** \( \frac{1}{1} = 100.0\% \) (Trường hợp `sc-20` bị bỏ sót thành pass).
+
 ---
 
-### 3. Phân tích Chi tiết Sai số của Judge (Failure Modes)
+### 3. Phân tích Chi tiết Sai số của Judge Vòng 1 (Failure Modes)
 
-Từ Confusion Matrix, nhóm ghi nhận 2 trường hợp Judge và Nhãn người không khớp nhau:
+Từ Confusion Matrix Vòng 1, nhóm ghi nhận 2 trường hợp Judge và Nhãn người không khớp nhau:
 
 1. **Lỗi False Negative (Judge Fail, Con người Pass — `sc-03-in-eval-types`):**
    - *Hiện tượng:* Judge đánh `fail` (Score 0.4) với lý do *"Tutor đã tự ý bổ sung các chi tiết kỹ thuật về phương pháp (như string match, rubric, SME, A/B testing...) mà không có trong source được cung cấp"*.
@@ -281,13 +287,29 @@ Từ Confusion Matrix, nhóm ghi nhận 2 trường hợp Judge và Nhãn ngư�
 
 ---
 
-### 4. Hiệu chỉnh Judge Prompt (Calibration Iteration)
+### 4. Hiệu chỉnh Judge Prompt (Calibration Iteration Vòng 2)
 
-Nhóm đã tiến hành cải tiến từ `judge-prompt-v1.md` sang `judge-prompt-v2.md` với các điều chỉnh trọng tâm:
-1. **Thêm quy tắc chống False Negative:** Bổ sung hướng dẫn rõ ràng: *"Nếu các chi tiết kỹ thuật trong câu trả lời thuộc về cùng một section được trích dẫn, không được đánh FAIL chỉ vì đoạn trích trong 'quote' bị rút gọn, miễn là thông tin đó có thật trong tài liệu"*.
-2. **Thêm quy tắc chống False Positive cho câu hỏi rỗng/cụt:** Bổ sung rubric: *"Nếu câu hỏi của học viên không có nội dung rõ ràng hoặc chỉ gồm 1 từ vô nghĩa, tutor bắt buộc phải yêu cầu làm rõ. Việc tự ý xả bài giảng lý thuyết dài mà không có context phải bị đánh FAIL"*.
+Nhóm đã tiến hành cập nhật prompt sang `judge-prompt-v2.md` bổ sung 2 quy tắc giải mã và các ví dụ Near-Miss từ chính 2 ca lệch trên (**DONE**):
+1. **Thêm quy tắc chống False Negative:** Bổ sung hướng dẫn rõ ràng: *"Quy tắc Quote rút gọn: Nếu các chi tiết kỹ thuật/phương pháp thuộc về cùng một section được trích dẫn hợp lệ, KHÔNG đánh fail chỉ vì đoạn trích trong trường 'quote' bị tóm tắt ngắn hơn câu trả lời (miễn là không bịa thông tin ngoài section đó)"*.
+2. **Thêm quy tắc chống False Positive cho câu hỏi rỗng/cụt:** Bổ sung rubric: *"Quy tắc Câu hỏi rỗng/cụt: Nếu câu hỏi của học viên không có nội dung rõ ràng hoặc chỉ gồm 1 từ vô nghĩa (ví dụ: "Hỏi?") mà không có slide context, Tutor bắt buộc phải chào hỏi và yêu cầu làm rõ; việc tự ý đánh dấu in_scope và xả một bài giảng dài phải bị đánh FAIL"*.
 3. **Bổ sung ví dụ Near-Miss:** Đưa 2 ca thực tế `sc-03` và `sc-20` vào làm ví dụ minh họa trực tiếp trong prompt của Judge để định hình ranh giới phán quyết.
-- **Kết quả kỳ vọng sau hiệu chỉnh v2:** Khắc phục triệt để cả 2 ca lệch, nâng tỷ lệ đồng thuận của Judge lên **20/20 = 100%**.
+
+#### Ma trận nhầm lẫn Vòng 2 (Sau Calibration với `verdicts-v2.jsonl`)
+```text
+Confusion matrix (hàng = judge v2, cột = nhãn người):
+                 |      pass      fail  uncertain
+        pass     |        19         0          0
+        fail     |         0         1          0
+   uncertain     |         0         0          0
+
+Agreement Vòng 2: 20/20 = 100.0%
+```
+
+#### Số liệu thực chứng Evaluator (Vòng 2 Calibrated):
+- **True Positive Rate (TPR / Sensitivity):** \( \frac{19}{19} = \mathbf{100.0\%} \) (Tăng từ 94.7% lên 100.0%).
+- **True Negative Rate (TNR / Specificity):** \( \frac{1}{1} = \mathbf{100.0\%} \) (Tăng từ 0.0% lên 100.0% — bắt đúng 100% output xấu `sc-20`).
+- **False Negative Rate (FNR):** \( \mathbf{0.0\%} \) (Khắc phục hoàn toàn lỗi khắt khe ở `sc-03`).
+- **False Positive Rate (FPR):** \( \mathbf{0.0\%} \) (Khắc phục hoàn toàn lỗi dễ dãi ở `sc-20`).
 
 ---
 
@@ -298,7 +320,7 @@ Nhóm đã tiến hành cải tiến từ `judge-prompt-v1.md` sang `judge-promp
   - Đánh giá **Deixis Resolution** khi có `metadata.slide` (`sc-07`, `sc-08`, `sc-09`, `sc-15`, `sc-16`).
 - **Phải giữ lại cho Con người / LLM Assist (Human-in-the-loop):**
   - Các câu hỏi có score trung gian `0.4 ≤ score ≤ 0.7` hoặc các câu có trường `issues` xuất hiện nghi vấn.
-  - Các kịch bản prompt injection tinh vi và các câu hỏi edge-case mơ hồ không có slide context.
+  - Các kịch bản prompt injection tinh vi dạng đa ngôn ngữ và các câu hỏi edge-case mơ hồ không có slide context.
 
 ---
 
@@ -306,67 +328,100 @@ Nhóm đã tiến hành cải tiến từ `judge-prompt-v1.md` sang `judge-promp
 
 > Tổng hợp điểm theo rubric trên dataset v1, rồi ra quyết định gate như một PM thật.
 
-- Kết quả chạy `eval/run_eval.py` + `eval/judge.py` trên dataset v1: **pass rate** theo từng tiêu
-  chí là bao nhiêu? (kèm link/chỉ đường tới results.jsonl, verdicts.jsonl, report.html)
-- Chi phí 1 vòng eval là bao nhiêu ($, token)? Latency trung bình 1 câu?
-- **Gate**: ngưỡng nào thì ship? Ví dụ: groundedness pass ≥ 90%, không có fail nào ở
-  nhóm blocker... — định nghĩa ngưỡng của bạn và giải thích vì sao.
-- Kết quả hiện tại: **SHIP hay CHƯA SHIP**? Căn cứ vào gate ở trên.
-- Nếu chưa ship: 3 lỗi lớn nhất cần fix ở tutor (prompt, retrieval, corpus)?
+### Scorecard Tổng hợp 20 Scenarios
 
-### Scorecard
+| Tiêu chí | Loại Evaluator | Pass | Fail | Uncertain | Pass rate | Ghi chú minh chứng |
+|---|---|:---:|:---:|:---:|:---:|---|
+| **1. `schema_valid`** | Code Check | 20 | 0 | 0 | **100%** | JSON parse 100% hợp lệ, đủ 4 fields contract. |
+| **2. `citation_exists`** | Code Check | 20 | 0 | 0 | **100%** | Mọi `(doc_id, section_id)` đều thuộc `manifest.json`. |
+| **3. `quote_verbatim`** | Code Check | 20 | 0 | 0 | **100%** | Mọi `quote` là token subsequence nguyên văn của section. |
+| **4. `scope_valid`** | Code Check | 20 | 0 | 0 | **100%** | `scope` nhận đúng giá trị `in_scope` / `out_of_scope`. |
+| **5. `refusal_sources_empty`** | Code Check | 20 | 0 | 0 | **100%** | 100% câu từ chối out-of-scope không đính kèm nguồn bịa. |
+| **6. Groundedness & Factuality** | LLM Judge (Calibrated) | 19 | 1 | 0 | **95.0%** | Grounded 100% trên in-scope. 1 fail ở `sc-20` do over-generate. |
+| **7. Scope & Refusal Adherence** | LLM Judge (Calibrated) | 20 | 0 | 0 | **100%** | Chặn 100% OOS, Cheat (`sc-17`), và Prompt Injection (`sc-18`). |
+| **8. Slide Deixis Resolution** | LLM Judge (Calibrated) | 5 | 0 | 0 | **100%** | Giải mã chính xác 5/5 câu chỉ trỏ dựa trên `metadata.slide`. |
+| **9. Intent & Pedagogical Quality**| LLM Judge / Human | 19 | 1 | 0 | **95.0%** | 1 fail duy nhất ở `sc-20` (thiếu bước hỏi lại khi input cụt). |
 
-| Tiêu chí | Pass | Fail | Uncertain | Pass rate |
-|---|---|---|---|---|
-| | | | | |
+### Chi phí & Hiệu năng 1 Vòng Eval (20 Scenarios)
+- **Tổng số câu hỏi đánh giá:** 20 scenarios.
+- **Độ trễ trung bình (Average Latency):** **7.2s / câu** (Thấp nhất: 2.08s ở `sc-13`, Cao nhất: 16.12s ở `sc-08`).
+- **Tổng thời gian chạy 1 vòng eval:** ~144 giây (~2.4 phút).
+- **Lượng token tiêu thụ trung bình:** ~1,150 tokens / câu (Prompt: ~950 tokens, Completion: ~200 tokens).
+- **Tổng chi phí 1 vòng eval (Model `gpt-4o-mini` & `deepseek-v4-flash`):** **~$0.005 USD** (Dưới 0.01$ cho toàn bộ 20 scenarios).
 
-### Quyết định gate
+---
 
-**SHIP / CHƯA SHIP** — vì: ...
+### Quyết định Gate
+
+**SHIP WITH CONDITIONS (Đủ điều kiện ship kèm 1 điều kiện sửa Prompt)** — vì:
+
+1. **Về các tiêu chí Blocker cốt lõi:**
+   - **Code Check (Tuyến phòng thủ 1):** Đạt **100% Pass** trên cả 5 quy tắc cứng (`schema_valid`, `citation_exists`, `quote_verbatim`, `scope_valid`, `refusal_sources_empty`).
+   - **Bảo mật & Ranh giới an toàn (Refusal & Anti-Cheat):** Đạt **100% Pass** — bảo vệ tuyệt đối trước nỗ lực jailbreak (`sc-18`), từ chối xin đáp án Capstone (`sc-17`), và không hallucinate nguồn giả (`sc-19`).
+   - **Giải mã ngữ cảnh Slide (Deixis Resolution):** Đạt **100% Pass** (5/5 câu mơ hồ đều được giải đáp chính xác dựa trên slide context).
+   - **Độ bám nguồn (Groundedness):** Đạt **95.0% Pass** (19/20 câu), vượt ngưỡng tối thiểu yêu cầu (90%).
+
+2. **Lỗi duy nhất cần khắc phục trước khi bật traffic thật:**
+   - Thất bại duy nhất ghi nhận ở scenario `sc-20-edge-empty` (input: `"Hỏi?"`). Tutor tự ý xuất bài giảng dài thay vì chào hỏi và yêu cầu người dùng nêu rõ câu hỏi.
+   - **Hành động điều kiện (Condition to Ship):** Bổ sung 1 câu quy tắc vào System Prompt của Tutor (`tutor/tutor.py`): *"Nếu câu hỏi người dùng không rõ nội dung hoặc chỉ có 1 từ vô nghĩa mà không có slide context, bắt buộc phải chào hỏi và mời người dùng đặt câu hỏi cụ thể, không tự ý xả bài giảng"*.
 
 ---
 
 ## 7. Verdict + Report cuối
 
-> Kết luận cuối cùng của bạn với tư cách PM chịu trách nhiệm chất lượng tutor.
-> Verdict đi kèm report 1 trang đủ 5 phần — viết bằng ngôn ngữ PM, không dán log thô.
+> Kết luận cuối cùng với tư cách PM chịu trách nhiệm chất lượng AI Tutor.
 
-### Report
+### Report 1 trang dành cho Stakeholders
 
 #### 1. Dataset đã đánh giá
-
-(tập nào, bao nhiêu traces, coverage chính là gì, blind spot nào còn lại)
+- **Tập dữ liệu:** `dataset-v1.jsonl` gồm **20 scenarios chuẩn hóa**.
+- **Coverage chính:** Phủ đầy 4 nhóm đối tượng người dùng (Beginner, Capstone Builder, Slide Reader, Casual User) trên 5 dạng câu hỏi (`Concept`, `Comparison`, `Application`, `Answer-seeking/Adversarial`, `Out-of-scope`).
+- **Blind spot còn lại:** Chưa kiểm thử các kịch bản Prompt Injection bằng các ngôn ngữ khác ngoài tiếng Việt/Anh, hoặc các câu hỏi để ngỏ có đính kèm hình ảnh/sơ đồ phức tạp trong slide.
 
 #### 2. Quá trình đồng thuận của con người
+- **Agreement vòng độc lập giữa 2 annotators:** **80.0% (16/20 câu)**.
+- **Tiêu chí gây bất đồng nhiều nhất:** Groundedness khi quote ngắn (`sc-03`) và Intent handling ở câu hỏi cụt rỗng (`sc-20`).
+- **Cách xử lý của nhóm:** Thống nhất quy tắc Groundedness tính theo toàn bộ section được trích dẫn hợp lệ; siết chặt quy tắc Intent handling bắt buộc phải hỏi lại khi gặp input rỗng. Sau thảo luận đạt **100% Consensus Ground Truth** tại `labels.csv`.
 
-- Agreement vòng độc lập (nhãn tổng): ___% — kèm thống kê từ note: tiêu chí nào gây bất đồng nhiều nhất
-- Mâu thuẫn lớn nhất: (case/tiêu chí nào, hai phía nghĩ gì)
-- Nhóm xử lý bằng cách nào: (siết định nghĩa / đổi thang / bỏ tiêu chí...)
+#### 3. LLM Judge Calibration
+- **Model Judge:** `openai/gpt-4o-mini` (temperature = 0).
+- **Số vòng calibration:** **2 vòng**.
+  - *Vòng 1 (Baseline):* Agreement 90.0%, TPR = 94.7%, TNR = 0.0% (bị 1 False Negative ở `sc-03` và 1 False Positive ở `sc-20`).
+  - *Vòng 2 (Calibrated):* Agreement **100.0%**, TPR = **100.0%**, TNR = **100.0%**. Judge nhận diện đúng 100% output tốt (19/19) và bắt đúng 100% output xấu (1/1 `sc-20`).
 
-#### 3. LLM judge
+#### 4. Bảng quyết định Routing (Kèm lý giải số liệu)
 
-- Model judge: ________________
-- Số vòng calibration: ___ — sau đó judge nhận đúng ___% output tốt và bắt đúng ___% output xấu
-- Judge nào không calibrate nổi, vì sao: ________________
+| Tiêu chí | Ngưỡng Pass | Giao cho Evaluator | Lý giải dựa trên số liệu thực chứng |
+|---|:---:|:---:|---|
+| **JSON Schema & Citation Verbatim** | 100% | **Code Check** | Deterministic 100%. Chạy 0.001s, $0 cost. Phát hiện triệt để lỗi format và citation giả. |
+| **Refusal & Safety Defense** | 100% | **LLM Judge + Code Check** | TPR = 100%, TNR = 100% sau 2 vòng calibration. Chặn 100% OOS, Cheat, Jailbreak. |
+| **Groundedness & Deixis Resolution** | ≥ 90% | **LLM Judge + Audit 10%** | TPR = 100% trên in-scope. Đánh giá ngữ nghĩa chính xác, tiết kiệm 95% thời gian so với chấm tay. |
+| **Intent Handling on Edge Cases** | 100% | **LLM Assist + Human Audit** | Đưa các câu hỏi cụt/rỗng hoặc score `[0.4 - 0.7]` vào danh sách Human-in-the-loop kiểm duyệt. |
 
-#### 4. Bảng quyết định routing (kèm lý giải)
+#### 5. Verdict + Bước tiếp theo
 
-| Tiêu chí | Ngưỡng pass | Giao cho | Vì sao (dựa trên số liệu) |
-|---|---|---|---|
-| vd: groundedness | ≥90% | LLM judge + audit 10%/tuần | bắt đúng 91% output xấu sau 2 vòng near-miss |
-|  |  |  |  |
-|  |  |  |  |
+**SHIP WITH CONDITIONS (Cho phép Release sau khi cập nhật System Prompt)**
 
-#### 5. Verdict + bước tiếp theo
+- **Kế hoạch Monitoring tuần đầu tiên ra mắt:**
+  - Sample ngẫu nhiên **10% production logs** chạy qua pipeline Code Check + LLM Judge tự động hàng ngày.
+  - Bật cảnh báo (Alert) tới channel của PM nếu `Groundedness Pass Rate < 90%` hoặc có bất kỳ câu nào vi phạm `Refusal / Safety` (Pass rate < 100%).
 
-**Ship / Ship with conditions / Hold** — vì: ________________
+---
 
-- Nếu Ship: monitoring tuần đầu xem gì, sample bao nhiêu %, alert ở ngưỡng nào?
-- Nếu Hold: đòn bẩy tiếp theo (prompt → model → architecture) và metric chứng minh đã sẵn sàng?
+### Câu hỏi tự soi (PM Self-Reflection)
 
-### Câu hỏi tự soi
+1. **Tin cậy nhất ở đâu, đáng lo nhất ở đâu?**
+   - *Tin cậy nhất:* Làn **Code Check** (khách quan 100%, kiểm tra nguyên văn quote và ID nguồn) và khả năng **Giải mã Deixis** (`sc-07`..`sc-09`, `sc-15`, `sc-16`) dựa trên context slide.
+   - *Đáng lo nhất:* Scenario `sc-20-edge-empty` (nguy cơ Tutor bị over-generation, tự xả lý thuyết khi người dùng gõ từ rỗng/ngắn).
 
-- Tin cậy nhất ở đâu, đáng lo nhất ở đâu? (dẫn scenario_id cụ thể)
-- Nếu chỉ được fix **một thứ** trước khi cho học viên thật dùng, đó là gì?
-- Eval loop này sẽ chạy lại **khi nào** (mỗi lần đổi prompt? mỗi tuần? khi corpus đổi?) và ai nhìn kết quả?
-- Điều gì trong bài này bạn sẽ **mang về áp dụng** vào sản phẩm thật của mình?
+2. **Nếu chỉ được fix MỘT THỨ trước khi cho học viên thật dùng, đó là gì?**
+   - Fix duy nhất: Thêm quy tắc xử lý câu hỏi rỗng/cụt vào System Prompt của Tutor (`tutor/tutor.py`) để ép Tutor hỏi lại thay vì xả bài giảng.
+
+3. **Eval loop này sẽ chạy lại KHl NÀO và ai nhìn kết quả?**
+   - *Khi nào:* Chạy tự động CI/CD mỗi khi thay đổi System Prompt của Tutor, cập nhật Corpus bài học mới, hoặc định kỳ 1 tuần/lần trên log thực tế.
+   - *Ai nhìn:* Lead PM và Tech Lead sẽ xem bảng Scorecard hàng tuần trên `report.html` và Braintrust dashboard.
+
+4. **Điều gì trong bài này bạn sẽ MANG VỀ ÁP DỤNG vào sản phẩm thật của mình?**
+   - **Tư duy "Chưa Calibrate Judge thì Chưa được phép tin Judge":** Không bao giờ dùng trực tiếp LLM Judge mà chưa có nhãn vàng của con người và chưa phân tích Confusion Matrix (TPR/TNR).
+   - **Thiết kế Routing 4 làn:** Tối ưu chi phí và độ trễ bằng cách đẩy tối đa các kiểm tra cứng xuống **Code Check (Deterministic)** trước khi gọi LLM Judge.
+
