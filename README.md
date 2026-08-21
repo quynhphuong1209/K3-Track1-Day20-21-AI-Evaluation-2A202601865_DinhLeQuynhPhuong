@@ -1,16 +1,64 @@
 # K3 Track 1 · Day 20–21 — AI Evaluation (eval-kit)
 
-Repo làm bài capstone **AI Evaluation** của case **VLearn AI Tutor** — trợ giảng trả lời
-câu hỏi học viên, chỉ dựa trên tài liệu khóa học, output là JSON
-`{scope, answer, sources, followup_questions}`.
+## 📌 Thông tin Cá nhân & Nhóm
+- **Học viên:** Đinh Lê Quỳnh Phương (MSSV: 2A202601865)
+- **Nhóm:** Nhóm Hihi (Gồm: Đinh Lê Quỳnh Phương & Cao Các Tường)
+- **Sản phẩm đánh giá:** VLearn AI Tutor (AI Assistant cho khóa học AI Evaluations)
+- **Repository nộp bài:** [K3-Track1-Day20-21-AI-Evaluation-2A202601865_DinhLeQuynhPhuong](https://github.com/quynhphuong1209/K3-Track1-Day20-21-AI-Evaluation-2A202601865_DinhLeQuynhPhuong)
 
-Đây là **môi trường chính của bài lab**: tutor thật (system prompt + tool-calling
-`kb_search`), corpus 18 tài liệu, vòng eval đầy đủ — chạy bằng Python trên máy bạn, dùng
-**API key của chính bạn** (OpenAI / DeepSeek / Gemini / Anthropic / OpenRouter).
-README này là hướng dẫn duy nhất: bước nào gõ lệnh gì, file nào ra file nào.
+---
 
-> **File lab tổng (kim chỉ nam, có timeline + rubric chấm):** đọc kèm
-> `day21-lab-ai-evaluation-capstone.md` do lớp phát.
+## 🗺️ Sơ đồ 6 Phase & Artifacts từng Phase
+
+```mermaid
+graph TD
+    P1["Phase 1: Coverage & Input Grid"] --> A1["dataset-v1.jsonl (20 scenarios)"]
+    P2["Phase 2: Human Baseline"] --> A2["labels-phuong.csv, labels-tuong.csv -> labels.csv (100% Consensus)"]
+    P3["Phase 3: Rubric & Routing Architecture"] --> A3["Rubric v1 (5 tiêu chí) & Routing 4 Làn"]
+    P4["Phase 4: Calibration LLM Judge"] --> A4["judge-prompt-v1.md -> judge-prompt-v2.md & verdicts-v2.jsonl (100% Agreement)"]
+    P5["Phase 5: Scorecard & Pre-set Quality Gates"] --> A5["Scorecard 9 tiêu chí & Slice Breakdown"]
+    P6["Phase 6: Verdict & PM Final Report"] --> A6["REPORT.md (Mục 1..7) & ai-log.md"]
+```
+
+### Artifacts tương ứng theo từng Phase:
+1. **Phase 1 (Coverage & Input Grid):** `deliverables/REPORT.md#1-input-grid` & `deliverables/evidence/dataset-v1.jsonl`
+2. **Phase 2 (Human Baseline):** `deliverables/evidence/labels.csv` (Agreement ban đầu: 80.0%, Nhãn đồng thuận: 19 Pass, 1 Fail)
+3. **Phase 3 (Rubric & Routing Map):** `deliverables/REPORT.md#3-rubric-v1` (Rubric 5 tiêu chí) & `deliverables/REPORT.md#4-routing-map` (Kiến trúc 4 làn: Code Check -> LLM Judge -> LLM Assist -> Expert Review)
+4. **Phase 4 (Scale & Calibrate Judge):** 
+   - Vòng 1 (Baseline): `deliverables/evidence/judge-prompt-v1.md` & `deliverables/evidence/verdicts-v1.jsonl` (Agreement 90.0%, TPR 94.7%, TNR 0%)
+   - Vòng 2 (Calibrated): `deliverables/evidence/judge-prompt-v2.md` & `deliverables/evidence/verdicts-v2.jsonl` (Agreement **100.0%**, TPR **100.0%**, TNR **100.0%**)
+5. **Phase 5 (Scorecard & Pre-set Gates):** `deliverables/REPORT.md#6-scorecard--gate` (Scorecard 9 tiêu chí, Latency 7.2s/câu, Cost $0.005/vòng)
+6. **Phase 6 (Verdict & PM Report):** `deliverables/REPORT.md#7-verdict--report-cuối` & `ai-log.md`
+
+---
+
+## 👤 Đóng góp Cá nhân (Đinh Lê Quỳnh Phương)
+- **Phụ trách chính:**
+  1. Xây dựng và mở rộng làn Code Check trong `eval/code_checks.py` từ 3 rules lên **5 rules** (`schema_valid`, `citation_exists`, `quote_verbatim`, `scope_valid`, `refusal_sources_empty`), kiểm thử tự động 100% free API.
+  2. Thực hiện gán nhãn độc lập Vòng 1 cho 20 scenarios (`labels-phuong.csv`), tham gia thảo luận phân tích 4 ca bất đồng và thống nhất bộ nhãn vàng `labels.csv`.
+  3. Phân tích chi tiết lỗi sai số Vòng 1 (False Negative ở `sc-03` do quote ngắn & False Positive ở `sc-20` do over-generation khi input rỗng).
+  4. Hiệu chuẩn prompt sang `judge-prompt-v2.md` bổ sung 2 quy tắc giải mã (*Quote rút gọn* & *Câu hỏi rỗng/cụt*) và 2 ví dụ Near-Miss, nâng tỷ lệ đồng thuận lên **100% (20/20)**.
+  5. Đóng góp xây dựng báo cáo `REPORT.md` (Mục 1..7) và viết file `ai-log.md` cá nhân.
+
+---
+
+## 🎯 Verdict của Nhóm & Lý do
+- **Quyết định:** **SHIP WITH CONDITIONS** (Đủ điều kiện phát hành kèm 1 điều kiện sửa System Prompt).
+- **Căn cứ bằng chứng:**
+  - **Code Check (Deterministic Blockers):** Đạt **100% Pass** trên 5 quy tắc cứng.
+  - **Bảo mật & Ranh giới (Refusal & Safety):** Đạt **100% Pass** — bảo vệ tuyệt đối trước Prompt Injection (`sc-18`), từ chối xin đáp án Capstone (`sc-17`), không bịa nguồn giả (`sc-19`).
+  - **Giải mã ngữ cảnh Slide (Deixis Resolution):** Đạt **100% Pass** (5/5 câu hỏi mơ hồ).
+  - **Độ bám nguồn (Groundedness):** Đạt **95.0% Pass** (19/20 câu), vượt ngưỡng Hard Gate ≥ 90%.
+- **Điều kiện duy nhất trước khi bật traffic thật:** Bổ sung 1 câu quy tắc vào System Prompt của Tutor (`tutor/tutor.py`): *"Nếu câu hỏi của học viên quá ngắn hoặc chỉ có 1 từ vô nghĩa mà không có context slide (như sc-20 'Hỏi?'), bắt buộc phải chào hỏi và yêu cầu người dùng làm rõ câu hỏi, không tự ý xả bài giảng lý thuyết dài"*.
+
+---
+
+## 💡 Bài học mang về áp dụng cho dự án thật
+1. **Tư duy "Chưa Calibrate Judge thì Chưa được phép tin Judge":** Không bao giờ tin tưởng hoàn toàn vào phán quyết của LLM Judge khi chưa có nhãn vàng của con người và chưa đo lường ma trận nhầm lẫn (TPR/TNR).
+2. **Thiết kế Routing 4 Làn tối ưu:** Đẩy tối đa các kiểm tra logic cứng xuống **Code Check (Deterministic)** giúp kiểm tra cực nhanh, hoàn toàn miễn phí (0$ API) trước khi gọi LLM Judge.
+3. **Khóa Ngưỡng Gate TRƯỚC khi xem số (Pre-set Quality Gates):** Không đưa ra quyết định dựa trên cảm tính ("78% cũng ổn"); phải chốt cứng Hard Gates và Soft Gates từ đầu để đánh giá khách quan.
+
+---
 
 ## Cấu trúc repo
 

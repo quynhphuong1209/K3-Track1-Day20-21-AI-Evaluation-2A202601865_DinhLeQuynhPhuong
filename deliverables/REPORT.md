@@ -500,7 +500,7 @@ Tránh để Pass Rate tổng (95%) che giấu lỗi suy thoái (regression) t�
 
 ---
 
-### 2. AI Support Log (Nhóm Cao Các Tường — Đinh Lê Quỳnh Phương & Cao Các Tường)
+### 2. AI Support Log (Nhóm Hihi — Đinh Lê Quỳnh Phương & Cao Các Tường)
 
 #### **AI đã giúp tôi ở đâu?**
 - Tự động hóa việc sinh cấu trúc mã nguồn Python cho 2 rules mới trong `eval/code_checks.py` (`check_scope_values` và `check_refusal_sources`), giúp tiết kiệm thời gian viết regex và kiểm tra schema thô.

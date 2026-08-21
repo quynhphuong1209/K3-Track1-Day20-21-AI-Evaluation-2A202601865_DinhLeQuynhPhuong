@@ -1,4 +1,4 @@
-# AI Support Log — Nhóm Cao Các Tường
+# AI Support Log — Nhóm Hihi
 
 > Ghi nhận minh bạch vai trò hỗ trợ của AI trong quá trình thực hiện bài lab AI Evaluation Loop (Track 1 Day 20-21).
 
