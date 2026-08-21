@@ -478,4 +478,46 @@ Tránh để Pass Rate tổng (95%) che giấu lỗi suy thoái (regression) t�
    - **Tư duy "Chưa Calibrate Judge thì Chưa được phép tin Judge":** Không bao giờ dùng trực tiếp LLM Judge mà chưa có nhãn vàng của con người và chưa phân tích Confusion Matrix (TPR/TNR).
    - **Thiết kế Routing 4 làn:** Tối ưu chi phí và độ trễ bằng cách đẩy tối đa các kiểm tra cứng xuống **Code Check (Deterministic)** trước khi gọi LLM Judge.
 
+---
+
+## 8. Quy tắc dùng AI & AI Support Log
+
+> Ghi nhận minh bạch vai trò hỗ trợ của AI trong quá trình thực hiện bài lab, tuân thủ đúng nguyên tắc phân định trách nhiệm giữa AI và Con người.
+
+### 1. Tuân thủ Nguyên tắc Sử dụng AI
+
+- **Được sử dụng AI cho:**
+  - Paraphrase và sinh biến thể cho 20 test inputs sau khi nhóm đã khóa 4 dimensions và tổ hợp ô coverage.
+  - Brainstorm 2 rules mở rộng cho `code_checks.py` (`check_scope_values` & `check_refusal_sources`) và gợi ý cấu trúc cho `judge_prompt.md`.
+  - Tóm tắt pattern sai số từ ma trận nhầm lẫn (False Negative ở `sc-03`, False Positive ở `sc-20`) để nhóm phân tích và hiệu chuẩn nhanh hơn.
+  - Soạn thảo và chuẩn hóa định dạng báo cáo `REPORT.md`.
+
+- **Tuyệt đối KHÔNG sử dụng AI cho:**
+  - Tự chọn dimensions, tổ hợp ô hoặc chiến lược coverage thay cho nhóm PM.
+  - Gán nhãn thay con người ở Phase 2 — bộ nhãn vàng (Consensus Ground Truth) hoàn toàn do 2 annotators (Phương & Tường) tự thẩm định và thống nhất độc lập.
+  - Tự quyết định verdict final hoặc thiết lập ngưỡng gate thay cho nhóm.
+  - Bịa đặt số liệu, trace hay kết quả chạy không tồn tại trong dữ liệu thô `evidence/`.
+
+---
+
+### 2. AI Support Log (Nhóm Cao Các Tường — Đinh Lê Quỳnh Phương & Cao Các Tường)
+
+#### **AI đã giúp tôi ở đâu?**
+- Tự động hóa việc sinh cấu trúc mã nguồn Python cho 2 rules mới trong `eval/code_checks.py` (`check_scope_values` và `check_refusal_sources`), giúp tiết kiệm thời gian viết regex và kiểm tra schema thô.
+- Hỗ trợ tính toán nhanh các chỉ số ma trận nhầm lẫn (TPR, TNR, FNR, FPR) từ tập kết quả `verdicts-v1.jsonl` và `verdicts-v2.jsonl` so sánh với `labels.csv`.
+- Gợi ý cách bổ sung quy tắc "Quote rút gọn" và "Câu hỏi rỗng/cụt" trong `judge-prompt-v2.md` cùng các ví dụ Near-Miss rõ ràng để nâng tỷ lệ đồng thuận lên 100%.
+- Tổng hợp và định dạng báo cáo `REPORT.md` chuẩn hóa theo ngôn ngữ quản trị sản phẩm (PM tone).
+
+#### **AI sai, hời hợt hoặc làm mất coverage ở đâu?**
+- Trong phiên bản Judge Baseline Vòng 1 (`judge-prompt-v1.md`), AI Judge tỏ ra quá khắt khe ở `sc-03` (đánh Fail chỉ vì trường `quote` trong JSON ngắn dù kiến thức nằm trong section được trích dẫn) và quá dễ dãi ở `sc-20` (đánh Pass bài giảng dài khi câu hỏi chỉ vỏn vẹn chữ `"Hỏi?"`).
+- Khi viết prompt cho Tutor, AI ban đầu có xu hướng xả lý thuyết dài (over-generation) với các câu hỏi rỗng/cụt thay vì hỏi lại để làm rõ ý định người dùng.
+- AI không tự phát hiện được các lỗi ranh giới về trải nghiệm sư phạm nếu không được con người cung cấp rubric cụ thể và ví dụ Near-Miss.
+
+#### **Tôi đã tự sửa hoặc quyết định lại điều gì?**
+- Trực tiếp đánh giá và gán nhãn thủ công 20 scenarios trên giao diện `report.html` để xây dựng bộ nhãn vàng đồng thuận (`labels.csv`) hoàn toàn độc lập với AI.
+- Quyết định chốt kết quả `sc-03` là **PASS** (vì kiến thức nằm trọn vẹn trong section được cite) và `sc-20` là **FAIL** (vì vi phạm nguyên tắc xử lý ý định người dùng), bác bỏ phán quyết sai ban đầu của Judge.
+- Quyết định chiến lược **SHIP WITH CONDITIONS**: Ép buộc phải bổ sung 1 dòng rule vào System Prompt của Tutor (`tutor/tutor.py`) xử lý câu hỏi cụt rỗng trước khi phát hành chính thức.
+- Tự định nghĩa ngưỡng Gate: Khóa cứng 100% Code Checks và 100% Anti-Cheat/Jailbreak Defense làm điều kiện tiên quyết (Blockers).
+
+
 
