@@ -112,7 +112,7 @@ function exportCsv(){var s="scenario_id,label,note\\n";
  ROWS.forEach(function(r){var c=cur(r.scenario_id,r.human_label);
   s+=q(r.scenario_id)+","+q(c.label)+","+q(c.note)+"\\n"});
  var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([s],{type:"text/csv"}));
- a.download="labels.csv";a.click();}
+ a.download="labels-phuong.csv";a.click();}
 document.getElementById("flt").onchange=render;render();
 </script></body></html>"""
 
