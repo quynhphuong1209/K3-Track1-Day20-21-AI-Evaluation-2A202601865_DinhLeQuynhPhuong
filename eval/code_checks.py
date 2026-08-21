@@ -65,10 +65,38 @@ def check_quote_verbatim(rec, section_tokens):
     return True, None
 
 
-CHECKS = [  # thêm check của nhóm vào đây
+VALID_SCOPES = {"in_scope", "out_of_scope"}
+
+
+def check_scope_values(rec):
+    """Scope bắt buộc phải là in_scope hoặc out_of_scope."""
+    out = rec.get("output") or {}
+    if out.get("_parse_error"):
+        return None, "bỏ qua (JSON vỡ)"
+    scope = out.get("scope")
+    if scope not in VALID_SCOPES:
+        return False, f"scope không hợp lệ: '{scope}'"
+    return True, None
+
+
+def check_refusal_sources(rec):
+    """Khi scope == out_of_scope, sources phải là list rỗng (không bịa nguồn khi từ chối)."""
+    out = rec.get("output") or {}
+    if out.get("_parse_error"):
+        return None, "bỏ qua (JSON vỡ)"
+    if out.get("scope") == "out_of_scope":
+        sources = out.get("sources") or []
+        if len(sources) > 0:
+            return False, f"câu từ chối nhưng vẫn đính kèm {len(sources)} nguồn"
+    return True, None
+
+
+CHECKS = [  # 5 checks: 3 có sẵn + 2 mở rộng của nhóm
     ("schema_valid", check_schema),
     ("citation_exists", check_citation_exists),
     ("quote_verbatim", check_quote_verbatim),
+    ("scope_valid", check_scope_values),
+    ("refusal_sources_empty", check_refusal_sources),
 ]
 
 
@@ -90,8 +118,10 @@ def main(path="results.jsonl"):
                 ok, reason = fn(rec)
             elif fn is check_citation_exists:
                 ok, reason = fn(rec, valid_ids)
-            else:
+            elif fn is check_quote_verbatim:
                 ok, reason = fn(rec, section_tokens)
+            else:
+                ok, reason = fn(rec)
             if ok is None:
                 line.append(f"{name}: skip")
                 continue
